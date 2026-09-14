@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIチャットアプリ</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; margin: 0; }
+        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px 15px; border-radius: 20px; max-width: 70%; word-break: break-all; }
+        .user { background: #0084ff; color: white; align-self: flex-end; }
+        .ai { background: white; color: #333; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        #input-container { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        button { background: #0084ff; color: white; border: none; padding: 10px 20px; margin-left: 10px; border-radius: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div class="message ai">こんにちは！何かお手伝いできることはありますか？</div>
+</div>
+
+<div id="input-container">
+    <input type="text" id="user-input" placeholder="メッセージを入力...">
+    <button onclick="sendMessage()">送信</button>
+</div>
+
+<script>
+    function sendMessage() {
+        const input = document.getElementById('user-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        // ユーザーのメッセージを表示
+        appendMessage(text, 'user');
+        input.value = '';
+
+        // AIの返答（仮の自動お返事システム）
+        setTimeout(() => {
+            const aiReplies = [
+                "なるほど、おもしろいですね！",
+                "それは素晴らしい考えです！",
+                "もっと詳しく教えてください！",
+                "応援しています！🌟",
+                "GitHubでAIを作る第一歩ですね！"
+            ];
+            const randomReply = aiReplies[Math.floor(Math.random() * aiReplies.length)];
+            appendMessage(randomReply, 'ai');
+        }, 1000);
+    }
+
+    function appendMessage(text, sender) {
+        const container = document.getElementById('chat-container');
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', sender);
+        messageDiv.innerText = text;
+        container.appendChild(messageDiv);
+        container.scrollTop = container.scrollHeight;
+    }
+</script>
+</body>
+</html>
