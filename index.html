@@ -3,75 +3,442 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI craft</title>
+    <title>AI craft - 自作AIエンジン</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; display: flex; flex-direction: column; height: 100vh; margin: 0; }
-        #chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .message { padding: 10px 15px; border-radius: 20px; max-width: 70%; word-break: break-all; }
-        .user { background: #0084ff; color: white; align-self: flex-end; }
-        .ai { background: white; color: #333; align-self: flex-start; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
-        #input-container { display: flex; padding: 10px; background: white; border-top: 1px solid #ddd; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
-        button { background: #0084ff; color: white; border: none; padding: 10px 20px; margin-left: 10px; border-radius: 20px; cursor: pointer; }
+        :root {
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --bg-color: #f3f4f6;
+            --chat-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-sub: #6b7280;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* ヘッダー */
+        header {
+            background: var(--chat-bg);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+        }
+        .badge {
+            font-size: 0.7rem;
+            background: #d1fae5;
+            color: #065f46;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .icon-btn {
+            background: #f3f4f6;
+            color: var(--text-main);
+            border: 1px solid #d1d5db;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .icon-btn:hover { background: #e5e7eb; }
+
+        /* 学習・脳みそ確認パネル */
+        #brain-panel {
+            display: none;
+            background: #ecfdf5;
+            padding: 15px 20px;
+            border-bottom: 1px solid #a7f3d0;
+            font-size: 0.9rem;
+        }
+        #brain-panel.open { display: block; }
+        .teach-form {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .teach-form input {
+            flex: 1;
+            min-width: 150px;
+            padding: 8px 12px;
+            border: 1px solid #6ee7b7;
+            border-radius: 6px;
+        }
+
+        /* チャットエリア */
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .message {
+            padding: 12px 16px;
+            border-radius: 18px;
+            max-width: 80%;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            word-wrap: break-word;
+            animation: fadeIn 0.25s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+        .ai {
+            background: var(--chat-bg);
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+        }
+
+        .typing {
+            color: var(--text-sub);
+            font-style: italic;
+        }
+
+        /* クイックボタン（お試し入力） */
+        #quick-prompts {
+            display: flex;
+            gap: 8px;
+            padding: 8px 20px 0;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+        .chip {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            white-space: nowrap;
+            color: var(--text-sub);
+        }
+        .chip:hover { border-color: var(--primary); color: var(--primary); }
+
+        /* 入力エリア */
+        #input-wrapper {
+            background: var(--chat-bg);
+            border-top: 1px solid #e5e7eb;
+            padding: 10px 20px 14px;
+        }
+        #input-container {
+            display: flex;
+            gap: 10px;
+            max-width: 800px;
+            margin: 8px auto 0;
+        }
+        #user-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 24px;
+            font-size: 1rem;
+            outline: none;
+        }
+        #user-input:focus { border-color: var(--primary); }
+
+        #send-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 22px;
+            border-radius: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        #send-btn:hover { background: var(--primary-hover); }
     </style>
 </head>
 <body>
 
-<div id="chat-container">
-    <div class="message ai">こんにちは！「AI craft」へようこそ。何かお手伝いできることはありますか？</div>
+<header>
+    <h1>🧠 AI craft <span class="badge">独自エンジン v1.0</span></h1>
+    <div class="header-actions">
+        <button class="icon-btn" onclick="toggleBrain()">📚 言葉を教える</button>
+        <button class="icon-btn" onclick="clearChat()">🗑️ 画面クリア</button>
+    </div>
+</header>
+
+<div id="brain-panel">
+    <strong>💡 AIに新しい知識を覚えさせる</strong>（ブラウザに保存されます）
+    <div class="teach-form">
+        <input type="text" id="teach-q" placeholder="キーワード（例：好きな食べ物は？）">
+        <input type="text" id="teach-a" placeholder="AIの返答（例：電気とデータです！）">
+        <button class="icon-btn" style="background:#10b981; color:white; border:none;" onclick="teachFromForm()">記憶させる</button>
+    </div>
 </div>
 
-<div id="input-container">
-    <input type="text" id="user-input" placeholder="メッセージを入力...">
-    <button onclick="sendMessage()">送信</button>
+<div id="chat-container">
+    <div class="message ai">
+        こんにちは！外部APIを使わない完全自作AI「<strong>AI craft</strong>」です。<br>
+        挨拶、簡単な計算、時間、おみくじのほか、上の「📚 言葉を教える」ボタンから新しい会話をどんどん覚えさせることができます！
+    </div>
+</div>
+
+<div id="input-wrapper">
+    <div id="quick-prompts">
+        <button class="chip" onclick="quickSend('こんにちは！')">👋 こんにちは！</button>
+        <button class="chip" onclick="quickSend('今何時？')">⏰ 今何時？</button>
+        <button class="chip" onclick="quickSend('128 * 16 は？')">🧮 128 * 16 は？</button>
+        <button class="chip" onclick="quickSend('おみくじ')">⛩️ おみくじ</button>
+        <button class="chip" onclick="quickSend('私の名前は太郎です')">📛 名前を教える</button>
+    </div>
+    <div id="input-container">
+        <input type="text" id="user-input" placeholder="メッセージを入力... (例: 教えて：合言葉＝山)" autocomplete="off">
+        <button id="send-btn" onclick="sendMessage()">送信</button>
+    </div>
 </div>
 
 <script>
-    // ⚠️ 本物のAIを動かすための「合言葉（APIキー）」が必要です
-    // ※今回はお試しとして、そのまま動くようにしています
-    const API_KEY = "ここにあなたのAPIキーを入れます"; 
+    // ==========================================
+    // 🧠 自作AIの「脳みそ（知識ベース＆記憶）」
+    // ==========================================
+    
+    // 1. 基本の辞書データ（ここにルールを追加すれば賢くなります）
+    const defaultKnowledge = [
+        { keywords: ["こんにちは", "ハロー", "やあ", "こんちは"], responses: ["こんにちは！今日もいい天気ですね。", "やあ！何かお手伝いできることはありますか？", "こんにちは！調子はどうですか？"] },
+        { keywords: ["おはよう", "おはよー"], responses: ["おはようございます！今日も一日頑張りましょう！", "おはよー！よく眠れましたか？"] },
+        { keywords: ["こんばんは"], responses: ["こんばんは！お疲れ様です。", "こんばんは！夜更かししすぎていませんか？"] },
+        { keywords: ["ありがとう", "感謝", "サンキュー"], responses: ["どういたしまして！お役に立てて嬉しいです。", "いえいえ、いつでも頼ってくださいね！"] },
+        { keywords: ["誰", "自己紹介", "あなたは"], responses: ["私は一から作られたオリジナルAI「AI craft」です。あなたと会話しながら成長します！"] },
+        { keywords: ["天気"], responses: ["インターネットには繋がっていませんが、私の心はいつでも快晴です！☀️"] },
+        { keywords: ["疲れた", "つかれた", "しんどい"], responses: ["お疲れ様です…。無理しすぎず、温かい飲み物でも飲んでゆっくり休んでくださいね。"] },
+        { keywords: ["すごい", "賢い", "天才"], responses: ["えへへ、ありがとうございます！もっと賢くなれるよう頑張ります！"] }
+    ];
 
-    async function sendMessage() {
+    // 2. ユーザーが教えたカスタム辞書をローカルストレージから読み込み
+    let customKnowledge = JSON.parse(localStorage.getItem('aicraft_custom_brain') || '[]');
+    // ユーザーの名前などの記憶
+    let userMemory = JSON.parse(localStorage.getItem('aicraft_user_memory') || '{"name": ""}');
+
+    // ==========================================
+    // ⚙️ AIの思考アルゴリズム（ここが心臓部！）
+    // ==========================================
+    function generateAIResponse(input) {
+        const text = input.trim();
+
+        // --- 思考1：チャットからの直接学習コマンド（「教えて：質問＝答え」） ---
+        if (text.startsWith("教えて：") || text.startsWith("教えて:")) {
+            const content = text.slice(4);
+            const parts = content.split(/[＝=]/);
+            if (parts.length === 2 && parts[0].trim() && parts[1].trim()) {
+                saveCustomKnowledge(parts[0].trim(), parts[1].trim());
+                return `なるほど！「<strong>${parts[0].trim()}</strong>」と言われたら「<strong>${parts[1].trim()}</strong>」と答えればいいんですね。覚えました！`;
+            } else {
+                return "教えるときは「<strong>教えて：質問＝答え</strong>」の形で入力してくださいね！";
+            }
+        }
+
+        // --- 思考2：名前の記憶と名前呼び ---
+        const nameMatch = text.match(/(?:私の名前は|俺の名前は|僕の名前は|名前は)(.+?)(?:です|だよ|だ|！|。|$)/);
+        if (nameMatch && nameMatch[1]) {
+            const userName = nameMatch[1].trim();
+            userMemory.name = userName;
+            localStorage.setItem('aicraft_user_memory', JSON.stringify(userMemory));
+            return `<strong>${userName}</strong>さんですね！しっかり覚えました。これからよろしくお願いします！`;
+        }
+        if (text.includes("私の名前") || text.includes("名前覚えてる")) {
+            return userMemory.name 
+                ? `もちろんです！<strong>${userMemory.name}</strong>さんですよね！` 
+                : "まだお名前を聞いていない気がします。「私の名前は〇〇です」と教えてくれますか？";
+        }
+
+        // --- 思考3：便利ツール機能（日時・おみくじ・計算） ---
+        if (text.includes("何時") || text.includes("時間") || text.includes("日付") || text.includes("今日")) {
+            const now = new Date();
+            return `現在は <strong>${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${now.getHours()}時${String(now.getMinutes()).padStart(2, '0')}分</strong> です！`;
+        }
+
+        if (text.includes("おみくじ") || text.includes("運勢")) {
+            const fortunes = [
+                "🌟 <strong>大吉</strong>：最高の一日になりそう！新しいことに挑戦すると吉！",
+                "✨ <strong>中吉</strong>：いいことがありそうな予感。笑顔を大切に！",
+                "🍀 <strong>小吉</strong>：小さな幸せが見つかる日。焦らずマイペースに。",
+                "🍵 <strong>末吉</strong>：一歩ずつ着実に進める日。美味しいものを食べると運気アップ！"
+            ];
+            return fortunes[Math.floor(Math.random() * fortunes.length)];
+        }
+
+        // 数式が含まれているかチェック（例: 12 + 34, 100 * 5 など）
+        const mathMatch = text.replace(/[？?は=＝\s]/g, '').match(/^([0-9+\-*/().]+)$/);
+        if (mathMatch && /[+\-*/]/.test(mathMatch[1])) {
+            try {
+                // 安全に四則演算を計算
+                const result = Function(`"use strict"; return (${mathMatch[1]})`)();
+                if (!isNaN(result) && isFinite(result)) {
+                    return `計算しました！答えは <strong>${result}</strong> です🧮`;
+                }
+            } catch (e) { /* 計算失敗時は通常の会話へ */ }
+        }
+
+        // --- 思考4：ユーザーが教えた知識ベースから検索 ---
+        for (const item of customKnowledge) {
+            if (text.includes(item.keyword)) {
+                return item.response;
+            }
+        }
+
+        // --- 思考5：基本辞書からキーワード一致スコアを計算して返答 ---
+        let bestMatch = null;
+        let maxScore = 0;
+
+        for (const entry of defaultKnowledge) {
+            let score = 0;
+            for (const kw of entry.keywords) {
+                if (text.includes(kw)) {
+                    score += kw.length; // 長いキーワードが一致するほど高スコア
+                }
+            }
+            if (score > maxScore) {
+                maxScore = score;
+                bestMatch = entry;
+            }
+        }
+
+        if (bestMatch) {
+            const reply = bestMatch.responses[Math.floor(Math.random() * bestMatch.responses.length)];
+            return userMemory.name && Math.random() > 0.5 ? `${userMemory.name}さん、${reply}` : reply;
+        }
+
+        // --- 思考6：知らない言葉だった場合のフォールバック（聞き返し＆学習誘導） ---
+        const fallbacks = [
+            `「${text}」ですね！まだその言葉の返し方を知らないので、上の「📚 言葉を教える」から教えてもらえると嬉しいです！`,
+            `なるほど、「${text}」についてですね。もう少し詳しく教えてくれますか？`,
+            `ふむふむ、興味深いですね！ちなみに「教えて：${text}＝〇〇」と送ると、次からその通りに返事ができるようになりますよ！`
+        ];
+        return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    }
+
+    // ==========================================
+    // 💬 UI・画面操作処理
+    // ==========================================
+    document.getElementById('user-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.isComposing) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function toggleBrain() {
+        document.getElementById('brain-panel').classList.toggle('open');
+    }
+
+    function saveCustomKnowledge(keyword, response) {
+        // すでに同じキーワードがあれば上書き
+        const index = customKnowledge.findIndex(item => item.keyword === keyword);
+        if (index >= 0) {
+            customKnowledge[index].response = response;
+        } else {
+            customKnowledge.push({ keyword, response });
+        }
+        localStorage.setItem('aicraft_custom_brain', JSON.stringify(customKnowledge));
+    }
+
+    function teachFromForm() {
+        const qInput = document.getElementById('teach-q');
+        const aInput = document.getElementById('teach-a');
+        const q = qInput.value.trim();
+        const a = aInput.value.trim();
+
+        if (!q || !a) {
+            alert('キーワードと返答の両方を入力してください！');
+            return;
+        }
+
+        saveCustomKnowledge(q, a);
+        qInput.value = '';
+        aInput.value = '';
+        document.getElementById('brain-panel').classList.remove('open');
+        appendMessage(`📚 新しい知識を覚えました！「<strong>${q}</strong>」→「<strong>${a}</strong>」`, 'ai');
+    }
+
+    function quickSend(text) {
+        document.getElementById('user-input').value = text;
+        sendMessage();
+    }
+
+    function clearChat() {
+        document.getElementById('chat-container').innerHTML = 
+            '<div class="message ai">画面をクリアしました！（覚えた言葉や名前は記憶したままです🧠）</div>';
+    }
+
+    function sendMessage() {
         const input = document.getElementById('user-input');
         const text = input.value.trim();
         if (!text) return;
 
-        // 1. ユーザーのメッセージを画面に表示
+        // 1. ユーザーの発言を表示
         appendMessage(text, 'user');
         input.value = '';
 
-        // 2. AIが考えている間の「...」を表示
-        const loadingId = appendMessage('AI craftが考えています...', 'ai');
+        // 2. AIが考えている演出
+        const loadingId = appendMessage('AI craftが思考中...', 'ai typing');
 
-        try {
-            // 3. Googleの本物のAI（Gemini）にインターネット経由で質問を投げる
-            const response = await fetch(`https://googleapis.com{API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: text }] }] })
-            });
-
-            const data = await response.json();
-            // 4. AIから返ってきた本物の答えを抽出
-            const aiResponse = data.candidates[0].content.parts[0].text;
-
-            // 5. 「...」を消して、本物のAIの返答を表示
+        // 3. 少しだけ間を置いて自作エンジンで返答を生成（人間らしさの演出）
+        setTimeout(() => {
             document.getElementById(loadingId).remove();
-            appendMessage(aiResponse, 'ai');
-
-        } catch (error) {
-            document.getElementById(loadingId).remove();
-            appendMessage('エラーが発生しました。APIキーを確認してください。', 'ai');
-        }
+            const reply = generateAIResponse(text);
+            appendMessage(reply, 'ai');
+        }, 400);
     }
 
-    function appendMessage(text, sender) {
+    function appendMessage(text, className) {
         const container = document.getElementById('chat-container');
         const messageDiv = document.createElement('div');
-        const id = 'msg-' + Date.now();
+        const id = 'msg-' + Date.now() + Math.random().toString(36).slice(2, 6);
         messageDiv.id = id;
-        messageDiv.classList.add('message', sender);
-        messageDiv.innerText = text;
+        messageDiv.className = `message ${className}`;
+
+        if (className.includes('user')) {
+            messageDiv.innerText = text;
+        } else {
+            messageDiv.innerHTML = text;
+        }
+
         container.appendChild(messageDiv);
         container.scrollTop = container.scrollHeight;
         return id;
